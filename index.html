@@ -365,8 +365,36 @@
         const p = r.p || {};
         const tit = p.titular || {};
         const deps = p.deps || [];
+        const a839 = r.a839 || null;
         const valAux = p.val_aux != null ? p.val_aux : r.val;
+        const val839 = a839 ? (a839.val || 0) : 0;
+        const totalRecebido = valAux + val839;
         const agora = new Date().toLocaleString('pt-BR');
+
+        const sec839Html = a839
+          ? `
+            <div class="pe-crit-grid" style="margin-bottom:8px;">
+              <div class="pe-crit-box ${a839.c1_idade ? 'chosen' : ''}">
+                <div class="lbl">Regra 1 — Titular ≥ 50 anos</div>
+                <div class="val" style="font-size:13px;">${a839.c1_idade ? '✔ ATENDIDO' : 'NÃO ATENDIDO'}</div>
+              </div>
+              <div class="pe-crit-box ${a839.c2_titular ? 'chosen' : ''}">
+                <div class="lbl">Regra 2 — Titular Defic./Moléstia</div>
+                <div class="val" style="font-size:13px;">${a839.c2_titular ? '✔ ATENDIDO' : 'NÃO ATENDIDO'}</div>
+                ${a839.c2_cond ? `<div class="tag" style="color:#0f172a;">${a839.c2_cond}</div>` : ''}
+              </div>
+              <div class="pe-crit-box ${a839.c3_dep ? 'chosen' : ''}">
+                <div class="lbl">Regra 3 — Dependente Defic./Moléstia</div>
+                <div class="val" style="font-size:13px;">${a839.c3_dep ? '✔ ATENDIDO' : 'NÃO ATENDIDO'}</div>
+              </div>
+            </div>
+            <div class="pe-info-grid">
+              <div class="pe-field"><label>Conclusão (Res. Nº 495/2023)</label><span>${a839.conclusao || 'Elegível ao adicional'}</span></div>
+              <div class="pe-field"><label>Percentual Adicional</label><span>${a839.pct || '50%'}</span></div>
+              <div class="pe-field"><label>Valor Rubrica 839</label><span style="color:#059669;">${fmtBRL(val839)}</span></div>
+            </div>
+          `
+          : '<p style="font-size:12.5px; color:#64748b;">Não possui lançamento na rubrica 839 (Acréscimo de até 50% — Res. Nº 495/2023) nesta competência.</p>';
 
         const depsSection = deps.length > 0
           ? `
@@ -448,15 +476,28 @@
                 </div>
               </div>
               <div class="pe-totais">
-                <div class="pe-total-box">
-                  <div class="lbl">Valor do Auxílio Recebido</div>
+                <div class="pe-total-box neutral">
+                  <div class="lbl">Auxílio Saúde Base (Evento 33)</div>
                   <div class="val">${fmtBRL(valAux)}</div>
+                </div>
+                <div class="pe-total-box neutral">
+                  <div class="lbl">Acréscimo 50% (Evento 839)</div>
+                  <div class="val" style="color:${a839 ? '#059669' : '#64748b'};">${a839 ? fmtBRL(val839) : 'R$ 0,00'}</div>
+                </div>
+                <div class="pe-total-box">
+                  <div class="lbl">Total Auxílio Saúde (33 + 839)</div>
+                  <div class="val">${fmtBRL(totalRecebido)}</div>
                 </div>
                 <div class="pe-total-box neutral">
                   <div class="lbl">Remuneração Utilizada como Base</div>
                   <div class="val">${fmtBRL(p.rem_base)}</div>
                 </div>
               </div>
+            </div>
+
+            <div class="pe-section">
+              <div class="pe-section-title">Acréscimo até 50% — Res. Nº 495/2023 (Rubrica 839)</div>
+              ${sec839Html}
             </div>
 
             <div class="pe-section">
