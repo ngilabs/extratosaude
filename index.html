@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extrato Individual — Auxílio Saúde</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 28px 18px 60px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Search Card */
+    .search-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+    .search-card h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .search-card .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .search-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .search-row input[type="text"] {
+      flex: 1;
+      min-width: 240px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-row input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .btn:hover { background: #f8fafc; }
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+    .btn-success:hover { background: #047857; }
+
+    .comp-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .comp-bar-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .comp-btn {
+      padding: 6px 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .comp-btn:hover { background: #f1f5f9; }
+    .comp-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* Multiple match selector */
+    .matches-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .matches-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-muted);
+    }
+    .match-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.12s ease, background 0.12s ease;
+    }
+    .match-item:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .match-item:last-child { margin-bottom: 0; }
+
+    .empty-msg {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Extrato Sheet */
+    .extrato-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .extrato-sheet {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .pe-header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .pe-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .pe-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .pe-meta { text-align: right; font-size: 12px; color: var(--text-muted); }
+
+    .pe-section {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      page-break-inside: avoid;
+    }
+    .pe-section-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #1e293b;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .pe-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px 16px;
+    }
+    .pe-field label {
+      display: block;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .pe-field span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .pe-crit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .pe-crit-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+    .pe-crit-box.chosen {
+      border: 2px solid var(--success);
+      background: var(--success-light);
+    }
+    .pe-crit-box .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .pe-crit-box .val { font-size: 16px; font-weight: 700; margin-top: 3px; }
+    .pe-crit-box .tag { font-size: 11px; font-weight: 700; color: var(--success); margin-top: 3px; }
+
+    .pe-totais {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .pe-total-box {
+      border: 1px solid #93c5fd;
+      background: var(--primary-light);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .pe-total-box.neutral { border-color: var(--border); background: #f8fafc; }
+    .pe-total-box .lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .pe-total-box .val { font-size: 17px; font-weight: 700; color: #1d4ed8; margin-top: 2px; }
+    .pe-total-box.neutral .val { color: var(--text); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { padding: 7px 9px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { background: #f8fafc; font-size: 11px; text-transform: uppercase; color: var(--text-muted); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .pe-footer {
+      margin-top: 14px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 12mm; }
+      body { background: #fff !important; padding: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .container { max-width: 100%; }
+      .extrato-sheet {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin-bottom: 0;
+        page-break-after: always;
+      }
+      .extrato-sheet:last-child { page-break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="search-card no-print">
+      <h1>Extrato Individual — Auxílio Saúde</h1>
+      <p class="subtitle">Informe a matrícula ou o nome para visualizar e imprimir o extrato detalhado do Auxílio Saúde (Evento 33).</p>
+
+      <div class="search-row">
+        <input type="text" id="busca-input" placeholder="Digite a matrícula ou nome..." autocomplete="off" />
+        <button class="btn btn-primary" id="btn-buscar">Consultar</button>
+        <button class="btn" id="btn-limpar">Limpar</button>
+      </div>
+
+      <div class="comp-bar">
+        <span class="comp-bar-label">Competência:</span>
+        <div id="comp-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+    </div>
+
+    <div id="resultado"></div>
+  </div>
+
+  <script src="dados_saude.js"></script>
+  <script>
+    (function () {
+      const DADOS = window.DADOS_SAUDE || [];
+      const resEl = document.getElementById('resultado');
+      const inputEl = document.getElementById('busca-input');
+
+      if (!DADOS.length) {
+        resEl.innerHTML = '<div class="empty-msg">Base <strong>dados_saude.js</strong> não encontrada ou vazia.</div>';
+        return;
+      }
+
+      const fmtBRL = (v) => (v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+      const COMPS = [...new Set(DADOS.map(r => r.ref))].filter(Boolean).sort();
+      let selectedComp = COMPS.length ? COMPS[COMPS.length - 1] : 'ALL';
+      let selectedMat = null;
+
+      function renderCompBtns() {
+        const wrap = document.getElementById('comp-btns');
+        const opts = [...COMPS.map(c => ({ val: c, lbl: c })), { val: 'ALL', lbl: 'Todas' }];
+        wrap.innerHTML = opts.map(o =>
+          `<button type="button" class="comp-btn ${selectedComp === o.val ? 'active' : ''}" data-val="${o.val}">${o.lbl}</button>`
+        ).join('');
+        wrap.querySelectorAll('.comp-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            selectedComp = b.dataset.val;
+            renderCompBtns();
+            if (selectedMat || inputEl.value.trim()) executarBusca();
+          });
+        });
+      }
+
+      function renderExtratoHtml(r) {
+        const p = r.p || {};
+        const tit = p.titular || {};
+        const deps = p.deps || [];
+        const valAux = p.val_aux != null ? p.val_aux : r.val;
+        const agora = new Date().toLocaleString('pt-BR');
+
+        const depsSection = deps.length > 0
+          ? `
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Nome do Dependente</th>
+                    <th>CPF</th>
+                    <th>Grau</th>
+                    <th>Nascimento (Idade)</th>
+                    <th class="num">Plano Informado</th>
+                    <th class="num">Valor da Faixa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${deps.map(d => `
+                    <tr>
+                      <td>${d.num}</td>
+                      <td><strong>${d.nome}</strong></td>
+                      <td>${d.cpf}</td>
+                      <td>${d.grau}</td>
+                      <td>${d.nasc} (${d.idade} anos)</td>
+                      <td class="num">${d.plano != null ? fmtBRL(d.plano) : '—'}</td>
+                      <td class="num"><strong>${fmtBRL(d.val_faixa)}</strong></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            <div style="text-align:right; margin-top:8px; font-size:12px;">
+              <strong>Total das faixas dos dependentes:</strong> ${fmtBRL(p.dep_total)}
+            </div>
+          `
+          : '<p style="font-size:12.5px; color:#64748b;">Nenhum dependente elegível com despesa de saúde lançada no período.</p>';
+
+        return `
+          <div class="extrato-sheet">
+            <div class="pe-header">
+              <div>
+                <h2>Extrato Individual — Auxílio Saúde</h2>
+                <div class="pe-sub">Evento: 33 - AUXILIO SAUDE | Detalhamento de Cálculo e Composição</div>
+              </div>
+              <div class="pe-meta">
+                <div><strong>Competência:</strong> ${r.ref}</div>
+                <div><strong>Emissão:</strong> ${agora}</div>
+              </div>
+            </div>
+
+            <div class="pe-section">
+              <div class="pe-section-title">Identificação do Beneficiário</div>
+              <div class="pe-info-grid">
+                <div class="pe-field"><label>Matrícula</label><span>${r.mat}</span></div>
+                <div class="pe-field" style="grid-column: span 2;"><label>Nome</label><span>${r.nome}</span></div>
+                <div class="pe-field"><label>Vínculo</label><span>${r.vinc || '—'}</span></div>
+                <div class="pe-field"><label>Situação</label><span>${r.sit || '—'}</span></div>
+                <div class="pe-field"><label>Tipo</label><span>${p.tipo || '—'}</span></div>
+              </div>
+            </div>
+
+            <div class="pe-section">
+              <div class="pe-section-title">Apuração dos Critérios e Valor Recebido</div>
+              <div class="pe-crit-grid">
+                <div class="pe-crit-box ${p.crit_num === 1 ? 'chosen' : ''}">
+                  <div class="lbl">Critério 1 — Plano / Seguro</div>
+                  <div class="val">${fmtBRL(p.c1)}</div>
+                  ${p.crit_num === 1 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                </div>
+                <div class="pe-crit-box ${p.crit_num === 2 ? 'chosen' : ''}">
+                  <div class="lbl">Critério 2 — Faixa Etária</div>
+                  <div class="val">${fmtBRL(p.c2)}</div>
+                  ${p.crit_num === 2 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                </div>
+                <div class="pe-crit-box ${p.crit_num === 3 ? 'chosen' : ''}">
+                  <div class="lbl">Critério 3 — 10% Remuneração</div>
+                  <div class="val">${fmtBRL(p.c3)}</div>
+                  ${p.crit_num === 3 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                </div>
+              </div>
+              <div class="pe-totais">
+                <div class="pe-total-box">
+                  <div class="lbl">Valor do Auxílio Recebido</div>
+                  <div class="val">${fmtBRL(valAux)}</div>
+                </div>
+                <div class="pe-total-box neutral">
+                  <div class="lbl">Remuneração Utilizada como Base</div>
+                  <div class="val">${fmtBRL(p.rem_base)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pe-section">
+              <div class="pe-section-title">Dados do Titular</div>
+              <div class="pe-info-grid">
+                <div class="pe-field"><label>Nascimento / Idade</label><span>${tit.nasc || '—'} (${tit.idade != null ? `${tit.idade} anos` : '—'})</span></div>
+                <div class="pe-field"><label>Faixa Etária / Valor</label><span>${tit.faixa != null ? tit.faixa : '—'} / ${fmtBRL(tit.val_faixa)}</span></div>
+                <div class="pe-field"><label>Plano Informado (Titular)</label><span>${tit.plano != null ? fmtBRL(tit.plano) : '—'}</span></div>
+              </div>
+            </div>
+
+            <div class="pe-section">
+              <div class="pe-section-title">Dependentes (${deps.length})</div>
+              ${depsSection}
+            </div>
+
+            <div class="pe-footer">
+              <span>Extrato gerado pelo Portal Auxílio Saúde</span>
+              <span>Matrícula ${r.mat} — Competência ${r.ref}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function mostrarExtratos(registros) {
+        if (!registros.length) {
+          resEl.innerHTML = '<div class="empty-msg">Nenhum extrato encontrado para esta competência.</div>';
+          return;
+        }
+        resEl.innerHTML = `
+          <div class="extrato-actions no-print">
+            <button class="btn btn-success" id="btn-imprimir">🖨️ Imprimir / Salvar Extrato em PDF</button>
+          </div>
+          ${registros.map(renderExtratoHtml).join('')}
+        `;
+        document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
+      }
+
+      function executarBusca() {
+        const q = inputEl.value.trim().toUpperCase();
+        if (!q && !selectedMat) {
+          resEl.innerHTML = '';
+          return;
+        }
+
+        if (selectedMat) {
+          const regs = DADOS.filter(r => r.mat === selectedMat && (selectedComp === 'ALL' || r.ref === selectedComp));
+          mostrarExtratos(regs);
+          return;
+        }
+
+        const isNumeric = /^\d+$/.test(q);
+        const matches = DADOS.filter(r =>
+          isNumeric ? r.mat === q : (r.mat.includes(q) || r.nome.toUpperCase().includes(q))
+        );
+
+        if (!matches.length) {
+          resEl.innerHTML = '<div class="empty-msg">Nenhum registro encontrado para essa matrícula ou nome.</div>';
+          return;
+        }
+
+        const distinctPeople = new Map();
+        matches.forEach(r => {
+          if (!distinctPeople.has(r.mat)) distinctPeople.set(r.mat, r);
+        });
+
+        if (distinctPeople.size === 1) {
+          const mat = matches[0].mat;
+          const regs = DADOS.filter(r => r.mat === mat && (selectedComp === 'ALL' || r.ref === selectedComp));
+          mostrarExtratos(regs);
+          return;
+        }
+
+        const list = Array.from(distinctPeople.values()).slice(0, 30);
+        resEl.innerHTML = `
+          <div class="matches-card no-print">
+            <h3>${distinctPeople.size} pessoas encontradas${distinctPeople.size > 30 ? ' (exibindo as 30 primeiras)' : ''} — clique para abrir o extrato:</h3>
+            ${list.map(p => `
+              <div class="match-item" data-mat="${p.mat}">
+                <div>
+                  <strong>${p.nome}</strong><br>
+                  <span style="font-size:12px; color:#64748b;">Matrícula: ${p.mat} | ${p.vinc || '—'}</span>
+                </div>
+                <span class="btn btn-primary" style="padding:6px 12px; font-size:12px;">Abrir Extrato</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        resEl.querySelectorAll('.match-item').forEach(el => {
+          el.addEventListener('click', () => {
+            selectedMat = el.dataset.mat;
+            executarBusca();
+          });
+        });
+      }
+
+      document.getElementById('btn-buscar').addEventListener('click', () => {
+        selectedMat = null;
+        executarBusca();
+      });
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          selectedMat = null;
+          executarBusca();
+        }
+      });
+      document.getElementById('btn-limpar').addEventListener('click', () => {
+        inputEl.value = '';
+        selectedMat = null;
+        resEl.innerHTML = '';
+        inputEl.focus();
+      });
+
+      renderCompBtns();
+    })();
+  </script>
+</body>
+</html>
