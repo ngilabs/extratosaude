@@ -305,6 +305,8 @@
         page-break-after: always;
       }
       .extrato-sheet:last-child { page-break-after: auto; }
+      details.mem-details:not([open]) { display: none !important; }
+      details.mem-details[open] summary { display: none !important; }
     }
   </style>
 </head>
@@ -320,9 +322,15 @@
         <button class="btn" id="btn-limpar">Limpar</button>
       </div>
 
-      <div class="comp-bar">
-        <span class="comp-bar-label">Competência:</span>
-        <div id="comp-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <div class="comp-bar" style="gap:14px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
+          <span class="comp-bar-label">Competência:</span>
+          <div id="comp-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px;">
+          <span class="comp-bar-label">Vínculo:</span>
+          <div id="perfil-btns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
       </div>
     </div>
 
@@ -344,7 +352,33 @@
       const fmtBRL = (v) => (v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
       const COMPS = [...new Set(DADOS.map(r => r.ref))].filter(Boolean).sort();
       let selectedComp = COMPS.length ? COMPS[COMPS.length - 1] : 'ALL';
+      let selectedPerfil = 'ALL';
       let selectedMat = null;
+
+      function getPerfilVinculo(vinc) {
+        const m = /^\s*(\d+)\b/.exec(String(vinc || ''));
+        if (m && (m[1] === '5' || m[1] === '18' || m[1] === '19')) return 'Magistrados';
+        return 'Servidores';
+      }
+
+      function renderPerfilBtns() {
+        const wrap = document.getElementById('perfil-btns');
+        const opts = [
+          { val: 'ALL', lbl: 'Todos' },
+          { val: 'Magistrados', lbl: 'Magistrados' },
+          { val: 'Servidores', lbl: 'Servidores' },
+        ];
+        wrap.innerHTML = opts.map(o =>
+          `<button type="button" class="comp-btn ${selectedPerfil === o.val ? 'active' : ''}" data-val="${o.val}">${o.lbl}</button>`
+        ).join('');
+        wrap.querySelectorAll('.comp-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            selectedPerfil = b.dataset.val;
+            renderPerfilBtns();
+            if (selectedMat || inputEl.value.trim()) executarBusca();
+          });
+        });
+      }
 
       function renderCompBtns() {
         const wrap = document.getElementById('comp-btns');
@@ -356,19 +390,52 @@
           b.addEventListener('click', () => {
             selectedComp = b.dataset.val;
             renderCompBtns();
+      renderPerfilBtns();
             if (selectedMat || inputEl.value.trim()) executarBusca();
           });
         });
       }
+
+      const GRAU_MAP = {
+        '1': 'Cônjuge',
+        '2': 'Filho',
+        '3': 'Pai',
+        '4': 'Mãe',
+        '5': 'Outros',
+        '6': 'Filho (a) com Deficiência',
+        '8': 'Tutelado',
+        '9': 'Filho Adotivo',
+        '10': 'Sogro',
+        '11': 'Sogra',
+        '12': 'Agregado',
+        '13': 'Enteado',
+        '14': 'Companheiro',
+        '15': 'Irmão',
+        '16': 'Sobrinho',
+        '17': 'Guarda',
+        '18': 'Pensionista',
+        '19': 'Filho Agregado',
+        '20': 'Enteado (a) com Deficiência',
+        '21': 'Curatela',
+        '22': 'Filho Universitario',
+      };
+      const formatGrau = (g) => {
+        const key = String(g == null ? '' : g).trim();
+        return GRAU_MAP[key] || key || '—';
+      };
 
       function renderExtratoHtml(r) {
         const p = r.p || {};
         const tit = p.titular || {};
         const deps = p.deps || [];
         const a839 = r.a839 || null;
+        const isMag = (p.tipo || '').toLowerCase().includes('magistrado') || getPerfilVinculo(r.vinc) === 'Magistrados';
         const valAux = p.val_aux != null ? p.val_aux : r.val;
         const val839 = a839 ? (a839.val || 0) : 0;
         const totalRecebido = valAux + val839;
+        const sumDepsPlano = deps.reduce((acc, d) => acc + (d.plano || 0), 0);
+        const v883 = r.v883 || 0;
+        const v882 = r.v882 || 0;
         const agora = new Date().toLocaleString('pt-BR');
 
         const sec839Html = a839
@@ -406,9 +473,9 @@
                     <th>Nome do Dependente</th>
                     <th>CPF</th>
                     <th>Grau</th>
-                    <th>Nascimento (Idade)</th>
+                    <th>Idade</th>
                     <th class="num">Plano Informado</th>
-                    <th class="num">Valor da Faixa</th>
+                    ${isMag ? '' : '<th class="num">Valor da Faixa</th>'}
                   </tr>
                 </thead>
                 <tbody>
@@ -417,17 +484,19 @@
                       <td>${d.num}</td>
                       <td><strong>${d.nome}</strong></td>
                       <td>${d.cpf}</td>
-                      <td>${d.grau}</td>
-                      <td>${d.nasc} (${d.idade} anos)</td>
+                      <td>${formatGrau(d.grau)}</td>
+                      <td>${d.idade != null ? `${d.idade} anos` : '—'}</td>
                       <td class="num">${d.plano != null ? fmtBRL(d.plano) : '—'}</td>
-                      <td class="num"><strong>${fmtBRL(d.val_faixa)}</strong></td>
+                      ${isMag ? '' : `<td class="num"><strong>${fmtBRL(d.val_faixa)}</strong></td>`}
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
             </div>
             <div style="text-align:right; margin-top:8px; font-size:12px;">
-              <strong>Total das faixas dos dependentes:</strong> ${fmtBRL(p.dep_total)}
+              ${isMag
+                ? `<strong>Soma dos planos informados dos dependentes:</strong> ${fmtBRL(sumDepsPlano)}`
+                : `<strong>Total das faixas dos dependentes:</strong> ${fmtBRL(p.dep_total)}`}
             </div>
           `
           : '<p style="font-size:12.5px; color:#64748b;">Nenhum dependente elegível com despesa de saúde lançada no período.</p>';
@@ -452,41 +521,20 @@
                 <div class="pe-field" style="grid-column: span 2;"><label>Nome</label><span>${r.nome}</span></div>
                 <div class="pe-field"><label>Vínculo</label><span>${r.vinc || '—'}</span></div>
                 <div class="pe-field"><label>Situação</label><span>${r.sit || '—'}</span></div>
-                <div class="pe-field"><label>Tipo</label><span>${p.tipo || '—'}</span></div>
               </div>
             </div>
 
             <div class="pe-section">
-              <div class="pe-section-title">Apuração dos Critérios e Valor Recebido</div>
-              <div class="pe-crit-grid">
-                <div class="pe-crit-box ${p.crit_num === 1 ? 'chosen' : ''}">
-                  <div class="lbl">Critério 1 — Plano / Seguro</div>
-                  <div class="val">${fmtBRL(p.c1)}</div>
-                  ${p.crit_num === 1 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
-                </div>
-                <div class="pe-crit-box ${p.crit_num === 2 ? 'chosen' : ''}">
-                  <div class="lbl">Critério 2 — Faixa Etária</div>
-                  <div class="val">${fmtBRL(p.c2)}</div>
-                  ${p.crit_num === 2 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
-                </div>
-                <div class="pe-crit-box ${p.crit_num === 3 ? 'chosen' : ''}">
-                  <div class="lbl">Critério 3 — 10% Remuneração</div>
-                  <div class="val">${fmtBRL(p.c3)}</div>
-                  ${p.crit_num === 3 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
-                </div>
-              </div>
-              <div class="pe-totais">
-                <div class="pe-total-box neutral">
-                  <div class="lbl">Auxílio Saúde Base (Evento 33)</div>
-                  <div class="val">${fmtBRL(valAux)}</div>
-                </div>
-                <div class="pe-total-box neutral">
-                  <div class="lbl">Acréscimo 50% (Evento 839)</div>
-                  <div class="val" style="color:${a839 ? '#059669' : '#64748b'};">${a839 ? fmtBRL(val839) : 'R$ 0,00'}</div>
-                </div>
-                <div class="pe-total-box">
-                  <div class="lbl">Total Auxílio Saúde (33 + 839)</div>
-                  <div class="val">${fmtBRL(totalRecebido)}</div>
+              <div class="pe-section-title">Valor do Pagamento</div>
+              <div class="pe-totais" style="margin-top:0;">
+                <div class="pe-total-box" style="border:2px solid #2563eb;">
+                  <div class="lbl">Valor do Pagamento — Auxílio Saúde</div>
+                  <div class="val" style="font-size:22px;">${fmtBRL(isMag ? valAux : totalRecebido)}</div>
+                  <div style="font-size:11.5px; color:#1e3a8a; font-weight:600; margin-top:3px;">
+                    ${!isMag && a839
+                      ? `Base (Ev. 33): ${fmtBRL(valAux)} + Acréscimo 50% (Ev. 839): ${fmtBRL(val839)}`
+                      : `Evento 33 (${p.crit_desc || 'Valor apurado'})`}
+                  </div>
                 </div>
                 <div class="pe-total-box neutral">
                   <div class="lbl">Remuneração Utilizada como Base</div>
@@ -496,23 +544,100 @@
             </div>
 
             <div class="pe-section">
-              <div class="pe-section-title">Acréscimo até 50% — Res. Nº 495/2023 (Rubrica 839)</div>
-              ${sec839Html}
+              <div class="pe-section-title">Como chegou no valor — Critérios Apurados</div>
+              ${isMag ? (() => {
+                const teto15 = p.c3 != null ? p.c3 : (p.rem_base != null ? p.rem_base * 0.15 : null);
+                const c1Mag = p.c1 != null ? p.c1 : ((tit.plano || 0) + sumDepsPlano);
+                const magC1Chosen = (p.crit_num === 1) || (c1Mag != null && teto15 != null && c1Mag <= teto15);
+                return `
+                  <div style="font-size:11.5px; color:#475569; margin-bottom:8px;">
+                    Regra (Magistrado): menor valor entre até 15% da remuneração base e o valor informado (titular + dependentes).
+                  </div>
+                  <div class="pe-crit-grid">
+                    <div class="pe-crit-box ${magC1Chosen ? 'chosen' : ''}">
+                      <div class="lbl">Valor Informado (Titular + Deps.)</div>
+                      <div class="val">${fmtBRL(c1Mag)}</div>
+                      ${magC1Chosen ? '<div class="tag">✔ MENOR VALOR APLICADO</div>' : '<div class="tag" style="color:#475569;">Apurado</div>'}
+                    </div>
+                    <div class="pe-crit-box ${!magC1Chosen ? 'chosen' : ''}">
+                      <div class="lbl">Teto — Até 15% Remun. Base</div>
+                      <div class="val">${fmtBRL(teto15)}</div>
+                      ${!magC1Chosen ? '<div class="tag">✔ MENOR VALOR APLICADO</div>' : '<div class="tag" style="color:#475569;">Limite 15%</div>'}
+                    </div>
+                  </div>
+                `;
+              })() : `
+                <div class="pe-crit-grid">
+                  <div class="pe-crit-box ${p.crit_num === 1 ? 'chosen' : ''}">
+                    <div class="lbl">Critério 1 — Plano / Seguro</div>
+                    <div class="val">${fmtBRL(p.c1)}</div>
+                    ${p.crit_num === 1 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                  </div>
+                  <div class="pe-crit-box ${p.crit_num === 2 ? 'chosen' : ''}">
+                    <div class="lbl">Critério 2 — Faixa Etária</div>
+                    <div class="val">${fmtBRL(p.c2)}</div>
+                    ${p.crit_num === 2 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                  </div>
+                  <div class="pe-crit-box ${p.crit_num === 3 ? 'chosen' : ''}">
+                    <div class="lbl">Critério 3 — 10% Remuneração</div>
+                    <div class="val">${fmtBRL(p.c3)}</div>
+                    ${p.crit_num === 3 ? '<div class="tag">✔ CRITÉRIO ESCOLHIDO</div>' : ''}
+                  </div>
+                </div>
+              `}
             </div>
 
-            <div class="pe-section">
-              <div class="pe-section-title">Dados do Titular</div>
-              <div class="pe-info-grid">
-                <div class="pe-field"><label>Nascimento / Idade</label><span>${tit.nasc || '—'} (${tit.idade != null ? `${tit.idade} anos` : '—'})</span></div>
-                <div class="pe-field"><label>Faixa Etária / Valor</label><span>${tit.faixa != null ? tit.faixa : '—'} / ${fmtBRL(tit.val_faixa)}</span></div>
-                <div class="pe-field"><label>Plano Informado (Titular)</label><span>${tit.plano != null ? fmtBRL(tit.plano) : '—'}</span></div>
+            ${isMag ? `
+              <div class="pe-section">
+                <div class="pe-totais" style="margin-top:0; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
+                  <div class="pe-total-box neutral">
+                    <div class="lbl">Plano Informado (Titular)</div>
+                    <div class="val" style="font-size:15px;">${tit.plano != null ? fmtBRL(tit.plano) : '—'}</div>
+                  </div>
+                  <div class="pe-total-box neutral">
+                    <div class="lbl">Soma Planos (Dependentes)</div>
+                    <div class="val" style="font-size:15px;">${fmtBRL(sumDepsPlano)}</div>
+                  </div>
+                  <div class="pe-total-box neutral">
+                    <div class="lbl">Reembolso Aux. Saúde (883)</div>
+                    <div class="val" style="font-size:15px;">${fmtBRL(v883)}</div>
+                  </div>
+                  <div class="pe-total-box neutral">
+                    <div class="lbl">Reembolso Atrasado (882)</div>
+                    <div class="val" style="font-size:15px;">${fmtBRL(v882)}</div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ` : `
+              ${a839 ? `
+                <div class="pe-section">
+                  <div class="pe-section-title">Acréscimo até 50% — Res. Nº 495/2023 (Rubrica 839: +${fmtBRL(val839)})</div>
+                  ${sec839Html}
+                </div>
+              ` : ''}
+
+              <div class="pe-section">
+                <div class="pe-section-title">Dados do Titular</div>
+                <div class="pe-info-grid">
+                  <div class="pe-field"><label>Valor da Faixa (Titular)</label><span style="color:#1d4ed8;">${fmtBRL(tit.val_faixa)} (Faixa: ${tit.faixa != null ? tit.faixa : '—'})</span></div>
+                  <div class="pe-field"><label>Idade</label><span>${tit.idade != null ? `${tit.idade} anos` : '—'}</span></div>
+                  <div class="pe-field"><label>Plano Informado (Titular)</label><span>${tit.plano != null ? fmtBRL(tit.plano) : '—'}</span></div>
+                </div>
+              </div>
+            `}
 
             <div class="pe-section">
               <div class="pe-section-title">Dependentes (${deps.length})</div>
               ${depsSection}
             </div>
+
+            ${r.obs ? `
+              <details class="pe-section mem-details">
+                <summary style="cursor:pointer; font-size:12.5px; font-weight:700; color:var(--primary);">Memória de Cálculo</summary>
+                <div class="pe-section-title" style="margin-top:8px;">Memória de Cálculo</div>
+                <div style="font-family:Consolas, monospace; font-size:11px; white-space:pre-wrap; line-height:1.45; color:#1e293b; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid var(--border);">${String(r.obs).replace(/</g, '&lt;')}</div>
+              </details>
+            ` : ''}
 
             <div class="pe-footer">
               <span>Extrato gerado pelo Portal Auxílio Saúde</span>
@@ -544,14 +669,19 @@
         }
 
         if (selectedMat) {
-          const regs = DADOS.filter(r => r.mat === selectedMat && (selectedComp === 'ALL' || r.ref === selectedComp));
+          const regs = DADOS.filter(r =>
+            r.mat === selectedMat &&
+            (selectedComp === 'ALL' || r.ref === selectedComp) &&
+            (selectedPerfil === 'ALL' || getPerfilVinculo(r.vinc) === selectedPerfil)
+          );
           mostrarExtratos(regs);
           return;
         }
 
         const isNumeric = /^\d+$/.test(q);
         const matches = DADOS.filter(r =>
-          isNumeric ? r.mat === q : (r.mat.includes(q) || r.nome.toUpperCase().includes(q))
+          (selectedPerfil === 'ALL' || getPerfilVinculo(r.vinc) === selectedPerfil) &&
+          (isNumeric ? r.mat === q : (r.mat.includes(q) || r.nome.toUpperCase().includes(q)))
         );
 
         if (!matches.length) {
@@ -612,6 +742,7 @@
       });
 
       renderCompBtns();
+      renderPerfilBtns();
     })();
   </script>
 </body>
